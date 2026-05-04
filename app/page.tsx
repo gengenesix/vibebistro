@@ -3,7 +3,7 @@
 import { useState, useRef } from "react"
 import Image from "next/image"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Menu, X, ShoppingBag, MapPin, Phone, Clock, Instagram } from "lucide-react"
+import { Menu, X, ShoppingBag, MapPin, Phone, Clock, Instagram, Trash2, ChevronRight } from "lucide-react"
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 
@@ -11,7 +11,7 @@ const FOOD = [
   {
     id: 1,
     name: "The OG Burger",
-    price: 14,
+    price: 120,
     tag: "Best Seller",
     tagBg: "#ff4d00",
     tagFg: "white",
@@ -21,7 +21,7 @@ const FOOD = [
   {
     id: 2,
     name: "Electric Pepperoni",
-    price: 18,
+    price: 150,
     tag: "Spicy",
     tagBg: "#2d31fa",
     tagFg: "white",
@@ -31,7 +31,7 @@ const FOOD = [
   {
     id: 3,
     name: "Loaded Fries XL",
-    price: 11,
+    price: 85,
     tag: "Popular",
     tagBg: "#bff000",
     tagFg: "#1a1a1a",
@@ -41,7 +41,7 @@ const FOOD = [
   {
     id: 4,
     name: "Vibe Chicken Sandwich",
-    price: 15,
+    price: 115,
     tag: "New",
     tagBg: "#bff000",
     tagFg: "#1a1a1a",
@@ -51,7 +51,7 @@ const FOOD = [
   {
     id: 5,
     name: "Portobello Stack",
-    price: 13,
+    price: 100,
     tag: "Vegan",
     tagBg: "#22c55e",
     tagFg: "white",
@@ -61,7 +61,7 @@ const FOOD = [
   {
     id: 6,
     name: "Late Night Nachos",
-    price: 16,
+    price: 130,
     tag: "After 10PM",
     tagBg: "#1a1a1a",
     tagFg: "white",
@@ -74,7 +74,7 @@ const DRINKS = [
   {
     id: 7,
     name: "Disco Sour",
-    price: 12,
+    price: 95,
     tag: "Popular",
     tagBg: "#bff000",
     tagFg: "#1a1a1a",
@@ -84,7 +84,7 @@ const DRINKS = [
   {
     id: 8,
     name: "Orange Crush",
-    price: 11,
+    price: 85,
     tag: "Fan Fave",
     tagBg: "#ff4d00",
     tagFg: "white",
@@ -94,7 +94,7 @@ const DRINKS = [
   {
     id: 9,
     name: "Cold Brew Float",
-    price: 8,
+    price: 65,
     tag: "Non-Alcoholic",
     tagBg: "#1a1a1a",
     tagFg: "white",
@@ -104,7 +104,7 @@ const DRINKS = [
   {
     id: 10,
     name: "Vibe Margarita",
-    price: 13,
+    price: 110,
     tag: "Signature",
     tagBg: "#2d31fa",
     tagFg: "white",
@@ -128,7 +128,7 @@ const EVENTS = [
     title: "BRUNCH CLUB",
     date: "Sat & Sun",
     time: "11AM \u2192 3PM",
-    desc: "Unlimited mimosas, live jazz, bottomless vibes. $35 per head.",
+    desc: "Unlimited mimosas, live jazz, bottomless vibes. \u20b5280 per head.",
     accentBg: "#ff4d00",
     accentFg: "white",
   },
@@ -186,16 +186,32 @@ const TIME_OPTIONS = [
   { label: "10:00 PM", value: "22:00" },
 ]
 
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+
+type OrderItem = { id: number; name: string; price: number }
+
+function groupOrder(items: OrderItem[]) {
+  const map = new Map<number, { item: OrderItem; qty: number }>()
+  for (const item of items) {
+    const entry = map.get(item.id)
+    if (entry) entry.qty++
+    else map.set(item.id, { item, qty: 1 })
+  }
+  return Array.from(map.values())
+}
+
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 
 export default function Home() {
   const [mobileOpen, setMobileOpen]           = useState(false)
   const [bookingOpen, setBookingOpen]         = useState(false)
+  const [orderOpen, setOrderOpen]             = useState(false)
   const [activeTab, setActiveTab]             = useState<"food" | "drinks">("food")
-  const [order, setOrder]                     = useState<{ name: string; price: number }[]>([])
+  const [order, setOrder]                     = useState<OrderItem[]>([])
   const [orderBarVisible, setOrderBarVisible] = useState(false)
   const [orderTimer, setOrderTimer]           = useState<ReturnType<typeof setTimeout> | null>(null)
   const [bookingDone, setBookingDone]         = useState(false)
+  const [orderPlaced, setOrderPlaced]         = useState(false)
   const [form, setForm] = useState({ name: "", email: "", date: "", time: "19:00", party: "2" })
 
   const menuRef      = useRef<HTMLElement>(null)
@@ -208,12 +224,20 @@ export default function Home() {
     setMobileOpen(false)
   }
 
-  function addToOrder(item: { name: string; price: number }) {
+  function addToOrder(item: Omit<OrderItem, never>) {
     setOrder((prev) => [...prev, item])
     setOrderBarVisible(true)
     if (orderTimer) clearTimeout(orderTimer)
-    const t = setTimeout(() => setOrderBarVisible(false), 3000)
+    const t = setTimeout(() => setOrderBarVisible(false), 3500)
     setOrderTimer(t)
+  }
+
+  function removeFromOrder(id: number) {
+    setOrder((prev) => {
+      const idx = prev.findLastIndex((i) => i.id === id)
+      if (idx === -1) return prev
+      return [...prev.slice(0, idx), ...prev.slice(idx + 1)]
+    })
   }
 
   function handleBooking(e: React.FormEvent) {
@@ -226,7 +250,13 @@ export default function Home() {
     setMobileOpen(false)
   }
 
+  function openOrder() {
+    setOrderOpen(true)
+    setOrderBarVisible(false)
+  }
+
   const orderTotal = order.reduce((s, i) => s + i.price, 0)
+  const grouped    = groupOrder(order)
 
   return (
     <>
@@ -236,11 +266,12 @@ export default function Home() {
       <div className={`order-bar${orderBarVisible && order.length > 0 ? " visible" : ""}`}>
         <ShoppingBag size={16} />
         <span>
-          {order.length} item{order.length !== 1 ? "s" : ""} &middot; ${orderTotal}
+          {order.length} item{order.length !== 1 ? "s" : ""} &middot; &#8373;{orderTotal}
         </span>
         <button
           className="btn-cta"
           style={{ background: "var(--accent)", color: "var(--dark)", fontSize: "11px", padding: "6px 14px", boxShadow: "none" }}
+          onClick={openOrder}
         >
           View Order
         </button>
@@ -255,14 +286,14 @@ export default function Home() {
           <a href="#events"    onClick={(e) => { e.preventDefault(); scrollTo(eventsRef) }}>Events</a>
           <a href="#locations" onClick={(e) => { e.preventDefault(); scrollTo(locationsRef) }}>Locations</a>
         </nav>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           {order.length > 0 && (
-            <div className="cart-pill">
+            <button className="cart-pill" onClick={openOrder} aria-label="View order">
               <ShoppingBag size={13} />
               <span>{order.length}</span>
-            </div>
+            </button>
           )}
-          <button className="btn-cta" onClick={openBooking}>Book a Table</button>
+          <button className="btn-cta hide-xs" onClick={openBooking}>Book a Table</button>
           <button className="hamburger" onClick={() => setMobileOpen((o) => !o)} aria-label="Toggle menu">
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -278,6 +309,15 @@ export default function Home() {
         <button className="btn-cta" style={{ alignSelf: "flex-start" }} onClick={openBooking}>
           Book a Table
         </button>
+        {order.length > 0 && (
+          <button
+            className="btn-cta"
+            style={{ alignSelf: "flex-start", background: "var(--accent)", color: "var(--dark)" }}
+            onClick={openOrder}
+          >
+            View Order ({order.length})
+          </button>
+        )}
       </div>
 
       <main>
@@ -289,11 +329,11 @@ export default function Home() {
               <br />
               JUST <span>FLAVOR</span>
             </h1>
-            <p style={{ fontSize: "clamp(14px, 2vw, 18px)", marginBottom: "clamp(24px, 4vw, 40px)", lineHeight: 1.65, color: "#555" }}>
+            <p className="hero-sub">
               Serving 70s aesthetics with a modern twist. Locally sourced,
               highkey delicious, and strictly for the vibers.
             </p>
-            <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
+            <div className="hero-btns">
               <button
                 className="btn-cta"
                 style={{ background: "var(--primary)", color: "white" }}
@@ -312,8 +352,8 @@ export default function Home() {
               <br />
               EVERY DAY
             </div>
-            <div className="floating-tag" style={{ top: "20%", left: "10%" }}>#AESTHETIC</div>
-            <div className="floating-tag" style={{ bottom: "30%", right: "18%" }}>LOWKEY FIRE</div>
+            <div className="floating-tag hero-tag-1">#AESTHETIC</div>
+            <div className="floating-tag hero-tag-2">LOWKEY FIRE</div>
           </div>
         </section>
 
@@ -356,20 +396,23 @@ export default function Home() {
                     src={item.img}
                     alt={item.name}
                     fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     style={{ objectFit: "cover" }}
                     loading="lazy"
                   />
                 </div>
                 <div className="menu-card-body">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                    <h3 style={{ fontSize: "17px", fontWeight: 800 }}>{item.name}</h3>
-                    <span className="price">${item.price}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", gap: "8px" }}>
+                    <h3 style={{ fontSize: "clamp(15px, 2vw, 17px)", fontWeight: 800, lineHeight: 1.2 }}>{item.name}</h3>
+                    <span className="price" style={{ flexShrink: 0 }}>&#8373;{item.price}</span>
                   </div>
                   <p style={{ fontSize: "13px", color: "#666", lineHeight: 1.55, marginBottom: "16px" }}>
                     {item.desc}
                   </p>
-                  <button className="btn-add" onClick={() => addToOrder({ name: item.name, price: item.price })}>
+                  <button
+                    className="btn-add"
+                    onClick={() => addToOrder({ id: item.id, name: item.name, price: item.price })}
+                  >
                     + Add to Order
                   </button>
                 </div>
@@ -434,7 +477,7 @@ export default function Home() {
         {/* LOCATIONS */}
         <section className="locations-section" ref={locationsRef} id="locations">
           <div className="locations-inner">
-            <h2 className="section-title" style={{ marginBottom: "clamp(30px, 5vw, 60px)" }}>
+            <h2 className="section-title" style={{ marginBottom: "clamp(28px, 5vw, 56px)" }}>
               FIND US
             </h2>
             <div className="locations-grid">
@@ -467,8 +510,8 @@ export default function Home() {
         </section>
 
         {/* INSTAGRAM */}
-        <section className="section-padding">
-          <h2 className="section-title" style={{ marginBottom: "clamp(24px, 4vw, 40px)", textAlign: "center" }}>
+        <section className="section-padding" style={{ paddingBottom: 0 }}>
+          <h2 className="section-title" style={{ marginBottom: "clamp(20px, 4vw, 40px)", textAlign: "center" }}>
             @VIBE.BISTRO
           </h2>
           <div className="social-grid">
@@ -484,7 +527,7 @@ export default function Home() {
                   src={src}
                   alt={`Instagram post ${i + 1}`}
                   fill
-                  sizes="(max-width: 768px) 50vw, 25vw"
+                  sizes="(max-width: 640px) 50vw, 25vw"
                   className="social-img"
                   style={{ objectFit: "cover" }}
                   loading="lazy"
@@ -507,7 +550,7 @@ export default function Home() {
             <br />
             Since 2024 but feels like 1974.
           </p>
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             {["IG", "TW", "TK"].map((s) => (
               <a key={s} href="#" className="social-badge" target="_blank" rel="noopener noreferrer">
                 {s}
@@ -537,8 +580,8 @@ export default function Home() {
         </div>
 
         <div className="footer-bottom">
-          <span>&copy; 2025 VIBE BISTRO GROUP</span>
-          <span>DESIGNED BY 1UI.DEV &amp; BUILT USING v0</span>
+          <span>&copy; 2026 GENESIS GROUP</span>
+          <span>Designed &amp; Built by Erick</span>
           <button
             onClick={openBooking}
             style={{ background: "none", border: "none", fontWeight: 800, fontSize: "inherit", textTransform: "uppercase", cursor: "pointer" }}
@@ -548,7 +591,120 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* BOOKING MODAL */}
+      {/* ── ORDER MODAL ─────────────────────────────────────────────────────── */}
+      <Dialog
+        open={orderOpen}
+        onOpenChange={(open) => {
+          setOrderOpen(open)
+          if (!open) setOrderPlaced(false)
+        }}
+      >
+        <DialogContent
+          style={{
+            background: "var(--bg)",
+            border: "3px solid var(--dark)",
+            borderRadius: 0,
+            maxWidth: "480px",
+            width: "calc(100% - 2rem)",
+            maxHeight: "90vh",
+            overflowY: "auto",
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle
+              style={{
+                fontFamily: "Syne, sans-serif",
+                fontSize: "clamp(20px, 5vw, 30px)",
+                fontWeight: 800,
+                textTransform: "uppercase",
+                letterSpacing: "-1px",
+              }}
+            >
+              {orderPlaced ? "ORDER PLACED!" : "YOUR ORDER"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {orderPlaced ? (
+            <div style={{ textAlign: "center", padding: "16px 0 8px" }}>
+              <div style={{ fontSize: "56px", marginBottom: "12px" }}>&#127829;</div>
+              <p style={{ fontWeight: 800, fontSize: "18px", marginBottom: "8px" }}>
+                It&apos;s on its way!
+              </p>
+              <p style={{ color: "#666", fontSize: "14px", lineHeight: 1.6 }}>
+                Your order has been sent to the kitchen.
+                <br />
+                Sit tight, it&apos;ll be with you shortly.
+              </p>
+              <button
+                className="btn-cta"
+                style={{ background: "var(--primary)", color: "white", width: "100%", padding: "14px", marginTop: "24px" }}
+                onClick={() => { setOrderOpen(false); setOrder([]); setOrderPlaced(false) }}
+              >
+                Done
+              </button>
+            </div>
+          ) : order.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "32px 0" }}>
+              <ShoppingBag size={48} style={{ opacity: 0.2, margin: "0 auto 16px" }} />
+              <p style={{ color: "#999", fontWeight: 700 }}>Your order is empty.</p>
+              <button
+                className="btn-cta"
+                style={{ marginTop: "20px" }}
+                onClick={() => { setOrderOpen(false); scrollTo(menuRef) }}
+              >
+                Browse Menu
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div className="order-list">
+                {grouped.map(({ item, qty }) => (
+                  <div key={item.id} className="order-row">
+                    <div className="order-row-left">
+                      <span className="order-qty">{qty}&#215;</span>
+                      <span className="order-name">{item.name}</span>
+                    </div>
+                    <div className="order-row-right">
+                      <span className="order-item-total">&#8373;{item.price * qty}</span>
+                      <button
+                        className="order-remove"
+                        onClick={() => removeFromOrder(item.id)}
+                        aria-label={`Remove one ${item.name}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="order-total-row">
+                <span style={{ fontWeight: 800, fontSize: "14px", textTransform: "uppercase", letterSpacing: "1px" }}>Total</span>
+                <span className="order-grand-total">&#8373;{orderTotal}</span>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "20px" }}>
+                <button
+                  className="btn-cta"
+                  style={{ background: "var(--primary)", color: "white", width: "100%", padding: "14px", fontSize: "15px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                  onClick={() => setOrderPlaced(true)}
+                >
+                  Place Order <ChevronRight size={16} />
+                </button>
+                <button
+                  className="btn-cta"
+                  style={{ background: "transparent", width: "100%", padding: "10px", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                  onClick={() => setOrder([])}
+                >
+                  <Trash2 size={13} /> Clear Order
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── BOOKING MODAL ───────────────────────────────────────────────────── */}
       <Dialog
         open={bookingOpen}
         onOpenChange={(open) => {
@@ -563,6 +719,8 @@ export default function Home() {
             borderRadius: 0,
             maxWidth: "520px",
             width: "calc(100% - 2rem)",
+            maxHeight: "90vh",
+            overflowY: "auto",
           }}
         >
           <DialogHeader>
