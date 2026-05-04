@@ -9,10 +9,11 @@ const OG_IMAGE =
   "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1200&h=630&q=85"
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://vibebistro.vercel.app"),
   title: "VIBE*BISTRO — No Cap, Just Flavor",
   description:
     "Serving 70s aesthetics with a modern twist. Locally sourced, highkey delicious, and strictly for the vibers. Open until 2AM.",
-  keywords: ["restaurant", "bistro", "food", "cocktails", "retro", "vibes", "Ghana"],
+  keywords: ["restaurant", "bistro", "food", "cocktails", "retro", "vibes", "Ghana", "Accra"],
   openGraph: {
     title: "VIBE*BISTRO — No Cap, Just Flavor",
     description:
@@ -27,6 +28,7 @@ export const metadata: Metadata = {
     ],
     type: "website",
     locale: "en_GH",
+    siteName: "VIBE*BISTRO",
   },
   twitter: {
     card: "summary_large_image",
@@ -36,8 +38,12 @@ export const metadata: Metadata = {
     images: [OG_IMAGE],
   },
   icons: {
-    icon: [{ url: "/favicon.avif", type: "image/avif" }],
-    apple: "/favicon.avif",
+    icon: [
+      { url: "/favicon.png", type: "image/png", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "32x32" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: "/favicon.png",
   },
 }
 
@@ -55,6 +61,8 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Playfair+Display:ital,wght@1,700&display=swap"
           rel="stylesheet"
         />
+        <meta name="theme-color" content="#ff4d00" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
       </head>
       <body className={`${spaceGrotesk.className} antialiased`}>{children}</body>
     </html>

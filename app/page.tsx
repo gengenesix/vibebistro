@@ -203,15 +203,13 @@ function groupOrder(items: OrderItem[]) {
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 
 export default function Home() {
-  const [mobileOpen, setMobileOpen]           = useState(false)
-  const [bookingOpen, setBookingOpen]         = useState(false)
-  const [orderOpen, setOrderOpen]             = useState(false)
-  const [activeTab, setActiveTab]             = useState<"food" | "drinks">("food")
-  const [order, setOrder]                     = useState<OrderItem[]>([])
-  const [orderBarVisible, setOrderBarVisible] = useState(false)
-  const [orderTimer, setOrderTimer]           = useState<ReturnType<typeof setTimeout> | null>(null)
-  const [bookingDone, setBookingDone]         = useState(false)
-  const [orderPlaced, setOrderPlaced]         = useState(false)
+  const [mobileOpen, setMobileOpen]   = useState(false)
+  const [bookingOpen, setBookingOpen] = useState(false)
+  const [orderOpen, setOrderOpen]     = useState(false)
+  const [activeTab, setActiveTab]     = useState<"food" | "drinks">("food")
+  const [order, setOrder]             = useState<OrderItem[]>([])
+  const [bookingDone, setBookingDone] = useState(false)
+  const [orderPlaced, setOrderPlaced] = useState(false)
   const [form, setForm] = useState({ name: "", email: "", date: "", time: "19:00", party: "2" })
 
   const menuRef      = useRef<HTMLElement>(null)
@@ -226,10 +224,6 @@ export default function Home() {
 
   function addToOrder(item: Omit<OrderItem, never>) {
     setOrder((prev) => [...prev, item])
-    setOrderBarVisible(true)
-    if (orderTimer) clearTimeout(orderTimer)
-    const t = setTimeout(() => setOrderBarVisible(false), 3500)
-    setOrderTimer(t)
   }
 
   function removeFromOrder(id: number) {
@@ -252,7 +246,6 @@ export default function Home() {
 
   function openOrder() {
     setOrderOpen(true)
-    setOrderBarVisible(false)
   }
 
   const orderTotal = order.reduce((s, i) => s + i.price, 0)
@@ -263,7 +256,7 @@ export default function Home() {
       <div className="grain-overlay" />
 
       {/* FLOATING ORDER BAR */}
-      <div className={`order-bar${orderBarVisible && order.length > 0 ? " visible" : ""}`}>
+      <div className={`order-bar${order.length > 0 && !orderOpen ? " visible" : ""}`}>
         <ShoppingBag size={16} />
         <span>
           {order.length} item{order.length !== 1 ? "s" : ""} &middot; &#8373;{orderTotal}
